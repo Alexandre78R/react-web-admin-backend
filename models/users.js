@@ -1,12 +1,39 @@
 const mongoose = require('mongoose');
+const passwordHash = require('password-hash');
+const jwt = require('jwt-simple');
+const config = require('../config/config')
 
-const userSchema = mongoose.Schema({
-  username: String,
-  email: String,
+// const userSchema = mongoose.Schema({
+//   username: String,
+//   email: String,
+//   password: String,
+//   description : String,
+// });
+
+// const userModel = mongoose.model('users', userSchema);
+
+// module.exports = userModel;
+var userSchema = mongoose.Schema({
+  username: {
+		type: String,
+		lowercase: true,
+		trim: true,
+		unique: true,
+		required: true
+	},
   password: String,
+  email:  String,
   description : String,
-});
+},{ timestamps: { createdAt: 'created_at' }})
 
-const userModel = mongoose.model('users', userSchema);
 
-module.exports = userModel;
+userSchema.methods = {
+	authenticate: function (password) {
+		return passwordHash.verify(password, this.password);
+	},
+	getToken: function () {
+		return jwt.encode(this, config.secret);
+	}
+}
+
+module.exports = mongoose.model('User', userSchema);
