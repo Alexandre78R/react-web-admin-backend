@@ -1,18 +1,9 @@
 const mongoose = require('mongoose');
 const passwordHash = require('password-hash');
 const jwt = require('jwt-simple');
-const config = require('../config/config')
+const config = require('../config/config');
 
-// const userSchema = mongoose.Schema({
-//   username: String,
-//   email: String,
-//   password: String,
-//   description : String,
-// });
-
-// const userModel = mongoose.model('users', userSchema);
-
-// module.exports = userModel;
+// Schema de la BDD.
 var userSchema = mongoose.Schema({
   username: {
 		type: String,
@@ -26,11 +17,13 @@ var userSchema = mongoose.Schema({
   description : String,
 },{ timestamps: { createdAt: 'created_at' }})
 
-
+//Methode après le Schema.
 userSchema.methods = {
+	//Vérification password en hash.
 	authenticate: function (password) {
 		return passwordHash.verify(password, this.password);
 	},
+	// Créaction du token avec notre clé secret dans le fichier config.
 	getToken: function () {
 		return jwt.encode(this, config.secret);
 	}

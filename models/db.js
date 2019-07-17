@@ -1,13 +1,17 @@
 const mongoose = require('mongoose');
 
-const dbUrl = '';
+//Url vers votre BDD mongoose
+const dbUrl = 'mongodb+srv://Alexandre78R:alexdu785@cluster0-wbqy3.mongodb.net/react-admin?retryWrites=true';
 
+//Options
 const options = {
   connectTimeoutMS: 5000,
   useNewUrlParser: true
 };
 
+//Connexion à la BDD
 mongoose.connect(dbUrl, options, error => {
+  //En cas d'erreur on l'affiche sinon sa se connect à  la bdd.
   if (error) {
     console.error(error);
   } else {

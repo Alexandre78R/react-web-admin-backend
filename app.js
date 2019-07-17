@@ -1,4 +1,6 @@
+//Connexion à la bdd directement au démmarage du backend.
 require('./models/db');
+
 const bodyParser = require('body-parser');
 
 var createError = require('http-errors');
@@ -22,6 +24,7 @@ var urlencodedParser = bodyParser.urlencoded({
 app.use(urlencodedParser);
 app.use(bodyParser.json());
 
+//Gestion du CORS
 app.use(function(req, res, next) {
   res.header('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
   res.header('Access-Control-Allow-Origin', '*');
@@ -38,11 +41,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
-//Définition du routeur
-// var router = express.Router();
-// app.use('/user', router);
-// require(__dirname + '/controllers/userController')(router);
-// require(__dirname + indexRouter)(router);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
