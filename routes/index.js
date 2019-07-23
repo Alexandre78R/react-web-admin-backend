@@ -29,7 +29,7 @@ router.post('/user/signup', function(req, res, next) {
                     User.create(userData)
                         .then(user => {
                             res.json({
-                                 "text" : user.email + ' registered',
+                                 "text" : "Bienvenue " + user.username + " !",
                                  "token" : user.getToken()
                             })
                         })
