@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 //Url vers votre BDD mongoose
-const dbUrl = 'mongodb+srv://Alexandre78R:alexdu785@cluster0-wbqy3.mongodb.net/react-admin?retryWrites=true';
+const dbUrl = '';
 
 //Options
 const options = {

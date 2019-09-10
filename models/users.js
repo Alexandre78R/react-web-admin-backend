@@ -5,7 +5,7 @@ const config = require('../config/config');
 
 // Schema de la BDD.
 var userSchema = mongoose.Schema({
-  username: {
+    username: {
 		type: String,
 		lowercase: true,
 		trim: true,
@@ -13,7 +13,7 @@ var userSchema = mongoose.Schema({
 		required: true
 	},
   password: String,
-  email:  String,
+  email: String,
   description : String,
 },{ timestamps: { createdAt: 'created_at' }})
 
