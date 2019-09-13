@@ -30,7 +30,8 @@ router.post('/user/signup', function(req, res, next) {
                         .then(user => {
                             res.json({
                                  "text" : "Bienvenue " + user.username + " !",
-                                 "token" : user.getToken()
+                                 "token" : user.getToken(),
+                                 "user": user,
                             })
                         })
                         .catch(err => {
@@ -40,7 +41,7 @@ router.post('/user/signup', function(req, res, next) {
                         })
             } else {
                 res.json({
-                    "text" : "L'utilisateur " + user.username + " existe déjà.",
+                    "text" : "L'utilisateur " + user.username + " existe déjà !",
                     "code" : 403
                })
             }
@@ -55,68 +56,39 @@ router.post('/user/signup', function(req, res, next) {
 //Route pour la connexion.
 router.post('/user/login', function(req, res, next) {
 
-        //On regarde dans la BDD si l'username existe bien.
-        User.findOne({
-            username: req.body.username
-        }).then(user => {
-              //Si on ne touve pas l'username on r'envois erreur 401
-            if (!user) {
-                res.json({
-                    "text": "L'utilisateur n'existe pas",
-                    "code": 401
-                })
-                //Si l'username est trouvé + le passwoard est correct on lui donne le token
-            } else {
-                if (user.authenticate(req.body.password)) {
-                    res.status(200).json({
-                        "token": user.getToken(),
-                        "text": "Authentification réussi"
-                    })
-                  //Si l'username est trouvé mais le password est incorrect on lui envois l'erreur 402.
-                } else {
-                    res.json({
-                        "text": "Mot de passe incorrect",
-                        "code": 402
-                    })
-                }
-            }
-        }).catch(err => {
+    //On regarde dans la BDD si l'username existe bien.
+    User.findOne({
+        username: req.body.username
+    }).then(user => {
+            //Si on ne touve pas l'username on r'envois erreur 401
+        if (!user) {
             res.json({
-                "text" : "Erreur interne"
-           })
+                "text": "L'utilisateur " + req.body.username +  " n'existe pas !",
+                "code": 401
+            })
+            //Si l'username est trouvé + le passwoard est correct on lui donne le token
+        } else {
+            if (user.authenticate(req.body.password)) {
+                res.status(200).json({
+                    "token": user.getToken(),
+                    "text": "Authentification réussi !",
+                    "user": user,
+                })
+                //Si l'username est trouvé mais le password est incorrect on lui envois l'erreur 402.
+            } else {
+                res.json({
+                    "text": "Mot de passe incorrect !",
+                    "code": 402
+                })
+            }
+        }
+    //En cas d'erreur on sort leport 500
+    }).catch(err => {
+        res.json({
+            "text" : "Erreur interne",
+            "code": 500
         })
-      
-    // //On regarde dans la BDD si l'username existe bien.
-    //   User.findOne({
-    //       username: req.body.username
-    //   }, function (err, user) {
-    //       //En cas d'erreur 5O0
-    //       if (err) {
-    //           res.status(500).json({
-    //               "text": "Erreur interne"
-    //           })
-    //         //Si on ne touve pas l'username on r'envois erreur 401
-    //       } else if (!user) {
-    //           res.status(401).json({
-    //               "text": "L'utilisateur n'existe pas",
-    //               "code": 401
-    //           })
-    //           //Si l'username est trouvé + le passwoard est correct on lui donne le token
-    //       } else {
-    //           if (user.authenticate(req.body.password)) {
-    //               res.status(200).json({
-    //                   "token": user.getToken(),
-    //                   "text": "Authentification réussi"
-    //               })
-    //             //Si l'username est trouvé mais le password est incorrect on lui envois l'erreur 402.
-    //           } else {
-    //               res.status(402).json({
-    //                   "text": "Mot de passe incorrect",
-    //                   "code": 402
-    //               })
-    //           }
-    //       }
-    //   })
+    })
 });
 
 module.exports = router;
