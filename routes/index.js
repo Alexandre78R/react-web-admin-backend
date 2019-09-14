@@ -71,7 +71,7 @@ router.post('/user/login', function(req, res, next) {
             if (user.authenticate(req.body.password)) {
                 res.status(200).json({
                     "token": user.getToken(),
-                    "text": "Authentification réussi !",
+                    "text": "Hello " + user.username + " !",
                     "user": user,
                 })
                 //Si l'username est trouvé mais le password est incorrect on lui envois l'erreur 402.
