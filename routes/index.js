@@ -92,19 +92,21 @@ router.post('/user/login', function(req, res, next) {
 });
 
 router.post('/user/count', function(req, res, next) {
+    
     var request = User.find({ username : { "$ne": '$ne' } });
+
     request.then(data => { 
         console.log(data.length);
         res.json({
             "UserCount": data.length,
             "code" : 200
-        }).catch(err => {
-            res.json({
-                "text" : "Erreur interne",
-                "code": 500
-            })
         })
-    });
+    }).catch(err => {
+        res.json({
+            "text" : "Erreur interne",
+            "code": 500
+        })
+    })
 });
   
 
