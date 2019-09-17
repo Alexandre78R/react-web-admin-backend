@@ -3,11 +3,19 @@ const passwordHash = require('password-hash');
 const jwt = require('jwt-simple');
 const config = require('../config/config');
 
-// Schema de la BDD.
+//Schema Note de la BDD.
+var NoteSchema = mongoose.Schema({
+	title:String,
+	note:String,
+	date:String,
+	temps:String,
+	color:String
+})
+
+// Schema Users de la BDD.
 var userSchema = mongoose.Schema({
     username: {
 		type: String,
-		lowercase: true,
 		trim: true,
 		unique: true,
 		required: true
@@ -15,6 +23,7 @@ var userSchema = mongoose.Schema({
   password: String,
   email: String,
   description : String,
+  notes : [NoteSchema],
 },{ timestamps: { createdAt: 'created_at' }})
 
 //Methode après le Schema.

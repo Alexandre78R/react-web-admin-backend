@@ -92,11 +92,11 @@ router.post('/user/login', function(req, res, next) {
 });
 
 router.post('/user/count', function(req, res, next) {
-    
+
     var request = User.find({ username : { "$ne": '$ne' } });
 
     request.then(data => { 
-        console.log(data.length);
+        // console.log(data.length);
         res.json({
             "UserCount": data.length,
             "code" : 200
@@ -108,6 +108,29 @@ router.post('/user/count', function(req, res, next) {
         })
     })
 });
-  
+
+//Route en développement pour des tests avec postman
+router.post('/note/add', function(req, res, next) {
+    //On cherche l'utilisateur 
+    User.findById(req.body.id, function(err, user){
+
+        //On envois les infos de la notes dans la bdd
+        user.notes.push({
+        title : req.body.title,
+        note : req.body.note,
+        date : req.body.date,
+        temps : req.body.temps,
+        color : req.body.color,
+        })
+
+        //on sauvgarde dans la bdd
+        user.save(function(err, user){
+          if (err) {
+            console.log(err);
+          }else{
+            console.log("New Message : ",user);          }
+        })
+      })
+});
 
 module.exports = router;
