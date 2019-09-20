@@ -91,6 +91,7 @@ router.post('/user/login', function(req, res, next) {
     })
 });
 
+//Route count
 router.post('/user/count', function(req, res, next) {
 
     var request = User.find({ username : { "$ne": '$ne' } });
@@ -99,20 +100,21 @@ router.post('/user/count', function(req, res, next) {
         // console.log(data.length);
         res.json({
             "UserCount": data.length,
-            "code" : 200
+            "code" : 200,
         })
     }).catch(err => {
+        console.log("/user/count", err)
         res.json({
             "text" : "Erreur interne",
-            "code": 500
+            "code": 500,
         })
     })
 });
 
-//Route en développement pour des tests avec postman
+//Route ajout de la note
 router.post('/note/add', function(req, res, next) {
     //On cherche l'utilisateur 
-    User.findById(req.body.id, function(err, user){
+    User.findById(req.body.idUser, function(err, user){
 
         //On envois les infos de la notes dans la bdd
         user.notes.push({
@@ -125,12 +127,35 @@ router.post('/note/add', function(req, res, next) {
 
         //on sauvgarde dans la bdd
         user.save(function(err, user){
-          if (err) {
+            if (err) {
             console.log(err);
-          }else{
-            console.log("New Message : ",user);          }
+            }else{
+            console.log("Notes : ",user);         
+            }
         })
-      })
+    })
+});
+
+//Route suppression de la note
+router.post('/note/del', function(req, res, next) {
+    //On cherche l'utilisateur 
+    User.findById(req.body.idUser, function(err, user){
+
+        // console.log("user -->", user)
+        // console.log("user.note -->", user.notes)
+
+        //Suppression de la note avec la position.
+        user.notes.splice(req.body.position,1);
+
+        //on sauvgarde dans la bdd
+        user.save(function(err, user){
+            if (err) {
+            console.log(err);
+            }else{
+            console.log("Notes : ",user); 
+            }
+        })
+    })
 });
 
 module.exports = router;
