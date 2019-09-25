@@ -35,9 +35,7 @@ router.post('/user/signup', function(req, res, next) {
                             })
                         })
                         .catch(err => {
-                            res.json({
-                                "text" : 'Erreur interne',
-                           })
+                            console.log("/user/signup ERR (Create User)", err)
                         })
             } else {
                 res.json({
@@ -47,9 +45,7 @@ router.post('/user/signup', function(req, res, next) {
             }
         })
         .catch(err => {
-            res.json({
-                "text" : "Erreur interne",
-           })
+            console.log("/user/signup ERR (Interne)", err)
         })
 // })
 });
@@ -84,10 +80,7 @@ router.post('/user/login', function(req, res, next) {
         }
     //En cas d'erreur on sort leport 500
     }).catch(err => {
-        res.json({
-            "text" : "Erreur interne",
-            "code": 500
-        })
+        console.log("/user/login ERR (Login (Interne))", err)
     })
 });
 
@@ -103,11 +96,7 @@ router.post('/user/count', function(req, res, next) {
             "code" : 200,
         })
     }).catch(err => {
-        console.log("/user/count", err)
-        res.json({
-            "text" : "Erreur interne",
-            "code": 500,
-        })
+        console.log("/user/count EROOR (Interne)", err)
     })
 });
 
@@ -126,11 +115,22 @@ router.post('/note/add', function(req, res, next) {
         })
 
         //on sauvgarde dans la bdd
-        user.save(function(err, user){
+        user.save(function(err, note){
             if (err) {
-            console.log(err);
+                console.log("/note/add ERR (Interne)", err)
             }else{
-            console.log("Notes : ",user);         
+                // console.log("Notes : ",user);
+
+                //On prend le nombre de note que l'user possède et on retire 1 pour prendre la dernière note 
+                var numberMaxNote = note.notes.length - 1; 
+
+                // console.log(note.notes[nombreMaxNote])
+
+                //On envoie en front les informations
+                res.json({
+                    "note": note.notes[numberMaxNote],
+                    "code" : 200,
+                })       
             }
         })
     })
@@ -144,15 +144,22 @@ router.post('/note/del', function(req, res, next) {
         // console.log("user -->", user)
         // console.log("user.note -->", user.notes)
 
+        //On stock la position dans une variable 
+        var position = req.body.position;
+
         //Suppression de la note avec la position.
-        user.notes.splice(req.body.position,1);
+        user.notes.splice(position,1);
 
         //on sauvgarde dans la bdd
-        user.save(function(err, user){
+        user.save(function(err, note){
             if (err) {
-            console.log(err);
+                console.log("/note/del (Suppression Interne)",err);
             }else{
-            console.log("Notes : ",user); 
+                // On envoie en front les informations
+                res.json({
+                    "position": position,
+                    "code" : 200,
+                })  
             }
         })
     })
