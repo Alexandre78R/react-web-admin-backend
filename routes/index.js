@@ -10,8 +10,15 @@ const config = require('../config/config');
 //Shéma bdd de l'user
 const User = require('../models/users.js');
 
-//Appelle du module  password-hash
-const passwordHash = require("password-hash");
+// //Appelle du module  password-hash
+// const passwordHash = require("password-hash");
+
+//Import des modules pour le password
+var uid2 = require("uid2");
+var CryptoJS = require("crypto-js");
+
+//Import nanoid
+var nanoid = require('nanoid')
 
 //Appelle du module nodemailer
 const nodemailer = require('nodemailer');
@@ -31,15 +38,21 @@ var transporter = nodemailer.createTransport({
 
 //Route pour enregistrer un nouveau compte.
 router.post('/user/signup', function(req, res, next) {
+
+    //Création du sel
+    var salt = uid2(32);
+
     //Stockage des données reçus du front
     var userData = {
         username: req.body.username, // Username
-        password: passwordHash.generate(req.body.password), // Hash du Password
+        salt: salt,//Pour le déchiffrage mdp
+        password : CryptoJS.AES.encrypt(req.body.password, salt).toString(),//MDP crypté
+        changePassword : false, //Etat si le mot de passe est en cours de changement  
         email : req.body.email, // Email
         emailVerif : false, //Etat de l'email à vérifier
         code : Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000, // Genération du code à 6 chiffre
-        online : false, //Statut si la personne est connecté (Pas encore utulisé)
-        ban : false, //Statut si la personne est ban  (Pas encore utulisé)
+        online : false, //Statut si la personne est connecté (Pas encore utilisé)
+        ban : false, //Statut si la personne est ban  (Pas encore utilisé)
         description : "", // Description de l'utilisateur
     }
 
@@ -109,7 +122,6 @@ router.post('/user/signup', function(req, res, next) {
             "code" : 500
         });
     })
-
 });
 
 //Route pour la connexion.
@@ -127,7 +139,14 @@ router.post('/user/login', function(req, res, next) {
             })
             //Si l'username est trouvé + le passwoard est correct on lui donne le token
         } else {
-            if (user.authenticate(req.body.password)) {
+            // ON GENERE LE DE-HASHAGE
+            // console.log("Password", user.password)
+            // console.log("Salt", user.salt)
+            // Decrypt
+            var bytes  = CryptoJS.AES.decrypt(user.password, user.salt);
+            var hash = bytes.toString(CryptoJS.enc.Utf8);
+            // console.log("MDP décrypté", hash)
+            if (hash === req.body.password) {
                 res.status(200).json({
                     "token": user.getToken(),
                     "text": "Hello " + user.username + " !",
@@ -173,18 +192,21 @@ router.post('/user/emailVerif', function(req, res, next) {
         ${config.userGmail}
         `
     };
+
     //Puis on envoie le email
     transporter.sendMail(mailOptions, (error, info) => {
+        //En cas d'erreur si l'emailne part pas
         if (error) {
             console.log(error);
             res.status(500).json({
                 "text" : "Erreur Interne !",
                 "code" : 500
             });
+        //On envoie le mail si il n' a pas d'erreur
         }else{
             console.log('Message %s sent: %s', info.messageId, info.response);
             res.json({
-                "text": `L'email a était envoyer à l'adresse email suivant : ${email} !`,
+                "text": `Un email a était envoyer à l'adresse email suivant : ${email} !`,
                 "code" : 200,
             }) 
         }
@@ -217,6 +239,155 @@ router.post('/status/emailVerif', function(req, res, next) {
     //En cas d'erreur 
     }).catch(err => {
         console.log("/status/emailVerif EROOR (Interne)", err)
+        res.status(500).json({
+            "text" : "Erreur Interne !",
+            "code" : 500
+        });
+    })
+});
+
+//Route pour changer le mot de passe.
+router.post('/user/forgottenPassword', function(req, res, next) {
+
+    //Recherche dans la BDD 
+    User.findOne({
+        //Précision de la recherche pour l'username.
+        username: req.body.username,
+    })
+        .then(username => {
+            //
+            if (username) {
+                //Recherche dans la BDD 
+                User.findOne({
+                    //Précision de la recherche pour l'email.
+                    email: req.body.email,
+                })
+                    .then(email => {
+                        //
+                        if (email) {
+                            var mdpGenerer = nanoid(10);
+                            console.log('mdpGenerer', mdpGenerer)
+
+                            // Encrypt
+                            var cripterMdp = CryptoJS.AES.encrypt(mdpGenerer, email.salt).toString();
+                            console.log("cripterMdp", cripterMdp)
+
+                            // Decrypt
+                            var bytes  = CryptoJS.AES.decrypt(cripterMdp, email.salt);
+                            var originalMdp = bytes.toString(CryptoJS.enc.Utf8);
+
+                            console.log(originalMdp); // 'my message'
+                            
+                            //Condition de recherhce dans la BDD par l'id de l'user
+                            var condition = { _id : email._id };
+
+                            //La requette de modification
+                            var update = { password: cripterMdp, changePassword : true };
+
+                            //On stock la requette BDD dna sune varible pour l'utiliser pour l'envoyer vers le front la réponse
+                            User.update(condition, update, { multi: true },
+                            function(err, numberAffected, raw) {
+                                // console.log("numberAffected",numberAffected)
+                                // console.log("raw", raw)
+                            })
+
+                            //Création de l'email à envoyer
+                            let mailOptions = {
+                                // should be replaced with real recipient's account
+                                to: req.body.email,
+                                subject: `Mot de passe temporaire pour le compte : " ${req.body.username} " .`,
+                                html: `
+                                Hello ${req.body.username},
+                                <br/>
+                                Voici votre mot de passe temporaire : ${originalMdp}
+                                <br/>
+                                Cordialement,
+                                ${config.userGmail}
+                                `
+                            };
+
+                            //Puis on envoie le email
+                            transporter.sendMail(mailOptions, (error, info) => {
+                                //En cas d'erreur dans l'envois du mail 
+                                if (error) {
+                                    console.log(error);
+                                    res.status(500).json({
+                                        "text" : "Erreur Interne !",
+                                        "code" : 500
+                                    });
+                                //Si tous va bien on envoie le mail
+                                }else{
+                                    console.log('Message %s sent: %s', info.messageId, info.response);
+                                    res.json({
+                                        "text": `Un email a était envoyer à l'adresse email suivant : ${req.body.email} avec mot de passe temporaire !`,
+                                        "code" : 200,
+                                    }) 
+                                }
+                            });
+                        //Erreur si on ne trouve pas l'email
+                        } else {
+                            res.json({
+                                "text" : "L'email " + req.body.email + " n'est pas trouvable !",
+                                "code" : 403
+                            })
+                        }
+                    })
+                    //En cas d'erreur
+                    .catch(err => {
+                        console.log("/user/signup ERR (Interne)", err)
+                        res.status(500).json({
+                            "text" : "Erreur Interne !",
+                            "code" : 500
+                        });
+                    })
+            //Si on ne trouve pas l'username
+            } else {
+                res.json({
+                    "text" : "L'utilisateur " + req.body.username + "  n'est pas trouvable !",
+                    "code" : 404
+               })
+            }
+        //En cas d'erreur
+        })
+    .catch(err => {
+        console.log("/user/signup ERR (Interne)", err)
+        res.status(500).json({
+            "text" : "Erreur Interne !",
+            "code" : 500
+        });
+    })
+});
+
+//Route pour changer le nouveau mot de passe de l'utilisateur
+router.post('/user/newMdp', function(req, res, next) {
+
+    // Encrypt
+    var cripterMdp = CryptoJS.AES.encrypt(req.body.password, req.body.salt).toString();
+    console.log("cripterMdp", cripterMdp)
+    
+    //Condition de recherhce dans la BDD par l'id de l'user
+    var condition = { _id : req.body.idUser };
+
+    //La requette de modification
+    var update = { password: cripterMdp, changePassword : false };
+
+    //On stock la requette BDD dna sune varible pour l'utiliser pour l'envoyer vers le front la réponse
+    var request = User.update(condition, update, { multi: true },
+    function(err, numberAffected, raw) {
+        // console.log("numberAffected",numberAffected)
+        // console.log("raw", raw)
+    })
+
+    //On evoie la réponse au frontend
+    request.then(data => { 
+        // console.log(data.length);
+        res.json({
+            "text": "Le mot de passe à était bien changer !",
+            "code" : 200,
+        })
+    //En cas d'erreur 
+    }).catch(err => {
+        console.log("/user/newMdp EROOR (Interne)", err)
         res.status(500).json({
             "text" : "Erreur Interne !",
             "code" : 500

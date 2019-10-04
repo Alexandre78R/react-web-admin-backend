@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const passwordHash = require('password-hash');
+// const passwordHash = require('password-hash');
 const jwt = require('jwt-simple');
 const config = require('../config/config');
 
@@ -20,7 +20,9 @@ var userSchema = mongoose.Schema({
 		unique: true,
 		required: true
 	},
+	salt: String,
 	password: String,
+	changePassword: Boolean,
 	email: {
 	type: String,
 	trim: true,
@@ -37,14 +39,10 @@ var userSchema = mongoose.Schema({
 
 //Methode après le Schema.
 userSchema.methods = {
-	//Vérification password en hash.
-	authenticate: function (password) {
-		return passwordHash.verify(password, this.password);
-	},
-	//Vérification code.
-	verifCode: function (code) {
-		return code, this.code;
-	},
+	// //Vérification password en hash.
+	// authenticate: function (password) {
+	// 	return passwordHash.verify(password, this.password);
+	// },
 	// Créaction du token avec notre clé secret dans le fichier config.
 	getToken: function () {
 		return jwt.encode(this, config.secret);
