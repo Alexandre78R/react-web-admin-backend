@@ -43,7 +43,7 @@ router.post('/user/signup', function(req, res, next) {
     var salt = uid2(32);
 
     //Stockage des données reçus du front
-    var userData = {
+    var userData  = {
         username: req.body.username, // Username
         salt: salt,//Pour le déchiffrage mdp
         password : CryptoJS.AES.encrypt(req.body.password, salt).toString(),//MDP crypté
@@ -178,6 +178,10 @@ router.post('/user/emailVerif', function(req, res, next) {
     var username = req.body.username;
     var code = req.body.code;
 
+    console.log("email", email)
+    console.log("username", username)
+    console.log("code", code )
+    
     //Création de l'email à envoyer
     let mailOptions = {
         // should be replaced with real recipient's account
@@ -263,7 +267,6 @@ router.post('/user/forgottenPassword', function(req, res, next) {
                     email: req.body.email,
                 })
                     .then(email => {
-                        //
                         if (email) {
                             var mdpGenerer = nanoid(10);
                             console.log('mdpGenerer', mdpGenerer)
@@ -418,43 +421,69 @@ router.post('/user/count', function(req, res, next) {
     })
 });
 
+//Route view de la note
+router.post('/note/view', function(req, res, next) {
+    User.findById(req.body.idUser, function(err, user){
+        if(err){
+            // console.log("L'utilisateur n'est pas trouvable pour récupéré  informatios des notes.")
+            res.status(500).json({
+                "text" : "L'utilisateur n'est pas trouvable pour récupéré  informatios des notes.",
+                "code" : "500"
+            })
+        }else{
+            // console.log("user --> ", user)
+            // console.log("Liste des notes", user.notes)
+            res.json({
+                'notes' : user.notes,
+                'code' : 200,
+            })
+        }
+    })
+});
+
 //Route ajout de la note
 router.post('/note/add', function(req, res, next) {
     //On cherche l'utilisateur 
     User.findById(req.body.idUser, function(err, user){
+        if (err) {
+            res.status(500).json({
+                "text" : "L'utilisateur n'est pas trouvable pour ajouté une note.",
+                "code" : "500"
+            })
+        }else{
+            //On envois les infos de la notes dans la bdd
+            user.notes.push({
+            title : req.body.title,
+            note : req.body.note,
+            date : req.body.date,
+            temps : req.body.temps,
+            color : req.body.color,
+            })
 
-        //On envois les infos de la notes dans la bdd
-        user.notes.push({
-        title : req.body.title,
-        note : req.body.note,
-        date : req.body.date,
-        temps : req.body.temps,
-        color : req.body.color,
-        })
+            //on sauvgarde dans la bdd
+            user.save(function(err, note){
+                if (err) {
+                    console.log("/note/add ERR (Interne)", err)
+                    res.status(500).json({
+                        "text" : "Erreur Interne !",
+                        "code" : 200
+                    });
+                }else{
+                    // console.log("Notes : ",user);
 
-        //on sauvgarde dans la bdd
-        user.save(function(err, note){
-            if (err) {
-                console.log("/note/add ERR (Interne)", err)
-                res.status(500).json({
-                    "text" : "Erreur Interne !",
-                    "code" : 500
-                });
-            }else{
-                // console.log("Notes : ",user);
+                    //On prend le nombre de note que l'user possède et on retire 1 pour prendre la dernière note 
+                    var numberMaxNote = note.notes.length - 1; 
 
-                //On prend le nombre de note que l'user possède et on retire 1 pour prendre la dernière note 
-                var numberMaxNote = note.notes.length - 1; 
+                    // console.log(note.notes[nombreMaxNote])
 
-                // console.log(note.notes[nombreMaxNote])
-
-                //On envoie en front les informations
-                res.json({
-                    "note": note.notes[numberMaxNote],
-                    "code" : 200,
-                })       
-            }
-        })
+                    //On envoie en front les informations
+                    res.json({
+                        "note": note.notes[numberMaxNote],
+                        "code" : 200,
+                    })       
+                }
+            })
+        }
     })
 });
 
@@ -463,31 +492,91 @@ router.post('/note/del', function(req, res, next) {
     //On cherche l'utilisateur 
     User.findById(req.body.idUser, function(err, user){
 
-        // console.log("user -->", user)
-        // console.log("user.note -->", user.notes)
+        if (err){
+            res.status(500).json({
+                "text" : "L'utilisateur n'est pas trouvable pour suprimé une note.",
+                "code" : "500"
+            })
+        }else{
+            // console.log("user -->", user)
+            // console.log("user.note -->", user.notes)
 
-        //On stock la position dans une variable 
-        var position = req.body.position;
+            //On stock la position dans une variable 
+            var position = req.body.position;
 
-        //Suppression de la note avec la position.
-        user.notes.splice(position,1);
+            //Suppression de la note avec la position.
+            user.notes.splice(position,1);
 
-        //on sauvgarde dans la bdd
-        user.save(function(err, note){
-            if (err) {
-                console.log("/note/del (Suppression Interne)",err);
-                res.status(500).json({
-                    "text" : "Erreur Interne !",
-                    "code" : 500
-                });
-            }else{
-                // On envoie en front les informations
-                res.json({
-                    "position": position,
-                    "code" : 200,
-                })  
-            }
-        })
+            //on sauvgarde dans la bdd
+            user.save(function(err, note){
+                if (err) {
+                    console.log("/note/del (Suppression Interne)",err);
+                    res.status(500).json({
+                        "text" : "Erreur Interne !",
+                        "code" : 500
+                    });
+                }else{
+                    // On envoie en front les informations
+                    res.json({
+                        "position": position,
+                        "code" : 200,
+                    })  
+                }
+            })
+        }
+    })
+});
+
+
+//Route suppression de la note
+router.post('/note/edit', function(req, res, next) {
+
+    console.log('req.body /note/edit', req.body)
+
+    //On cherche l'utilisateur 
+    User.findById(req.body.idUser, function(err, user){
+
+        if (err){
+            res.status(500).json({
+                "text" : "L'utilisateur n'est pas trouvable pour suprimé une note.",
+                "code" : "500"
+            })
+        }else{
+
+            //On stock les informations de l'utilisateur dans des variable 
+            var position = req.body.position;
+            var title = req.body.title;
+            var note = req.body.note;
+            var date = req.body.date;
+            var temps = req.body.temps;
+            var color = req.body.color;
+
+            //On supprime l'ancienne note avec la possition et on la renplace directement par les nouvelles informations.
+            user.notes.splice(position, 1, ({
+                title : title,
+                note : note,
+                date : date,
+                temps : temps,
+                color : color,
+            }))
+
+            //on sauvgarde dans la bdd
+            user.save(function(err, note){
+                if (err) {
+                    console.log("/note/edit (Suppression Interne)",err);
+                    res.status(500).json({
+                        "text" : "Erreur Interne !",
+                        "code" : 500
+                    });
+                }else{
+                    // On envoie en front les informations
+                    res.json({
+                        "text": "La note à était bien modifier.",
+                        "code" : 200,
+                    })  
+                }
+            })
+        }
     })
 });
 
